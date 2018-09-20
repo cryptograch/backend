@@ -5,7 +5,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Taxi.Migrations
 {
-    public partial class migration : Migration
+    public partial class upd : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -223,6 +223,7 @@ namespace Taxi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
+                    ConnectionId = table.Column<string>(nullable: true),
                     IdentityId = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
@@ -241,8 +242,10 @@ namespace Taxi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
+                    ConnectionId = table.Column<string>(nullable: true),
                     IdentityId = table.Column<string>(nullable: true),
-                    City = table.Column<string>(nullable: true)
+                    City = table.Column<string>(nullable: true),
+                    Location = table.Column<Point>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -304,7 +307,8 @@ namespace Taxi.Migrations
                     Solved = table.Column<bool>(nullable: false),
                     CustomerId = table.Column<Guid>(nullable: false),
                     IdentityId = table.Column<string>(nullable: true),
-                    TripHistoryId = table.Column<Guid>(nullable: false)
+                    TripHistoryId = table.Column<Guid>(nullable: false),
+                    AdminResponseId = table.Column<Guid>(nullable: false)
                 },
                 constraints: table =>
                 {

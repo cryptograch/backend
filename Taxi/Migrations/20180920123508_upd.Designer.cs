@@ -11,8 +11,8 @@ using Taxi.Data;
 namespace Taxi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20180910150309_messages")]
-    partial class messages
+    [Migration("20180920123508_upd")]
+    partial class upd
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -20,7 +20,7 @@ namespace Taxi.Migrations
             modelBuilder
                 .HasAnnotation("Npgsql:PostgresExtension:postgis", "'postgis', '', ''")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
-                .HasAnnotation("ProductVersion", "2.1.1-rtm-30846")
+                .HasAnnotation("ProductVersion", "2.1.2-rtm-30932")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
