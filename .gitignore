@@ -12,6 +12,7 @@ rootkey.csv
 credentials
 env.env
 docker-compose.yml
+docker-compose.yaml
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
