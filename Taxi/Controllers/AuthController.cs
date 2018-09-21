@@ -18,6 +18,8 @@ using Taxi.Models.Customers;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Taxi.Controllers
 {
@@ -81,7 +83,21 @@ namespace Taxi.Controllers
             }
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, customer.Id, ip,userAgent);
+
+            string jwt;
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions,
+                    customer.Id, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt)); ;
         }
@@ -170,9 +186,24 @@ namespace Taxi.Controllers
                 return NotFound();
             }
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
+
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
 
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, driver.Id, ip, userAgent);
+            string jwt = null;
+
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions,
+                    driver.Id, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt)); 
         }
@@ -202,7 +233,21 @@ namespace Taxi.Controllers
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
 
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, admin.Id, ip, userAgent);
+            string jwt;
+
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, admin.Id,
+                    ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt));
         }
@@ -355,9 +400,21 @@ namespace Taxi.Controllers
 
             if (refreshToken == null)
                 return BadRequest();
-
-            var res = await _jwtFactory.RefreshToken(refreshToken, _jwtOptions,ip, userAgent);
-
+            
+            TokensDto res;
+            try
+            {
+                res = await _jwtFactory.RefreshToken(refreshToken, _jwtOptions, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
+            
             if (res == null)
                 return BadRequest();
             return Ok(res);

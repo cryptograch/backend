@@ -398,12 +398,17 @@ namespace Taxi.Services
         {
             try
             {
-                 _dataContext.RefreshTokens.Remove(token);
-                await _dataContext.SaveChangesAsync();
+                if (await _dataContext.RefreshTokens.AnyAsync(t => t.Token == token.Token))
+                {
+                    _dataContext.RefreshTokens.Remove(token);
+                    await _dataContext.SaveChangesAsync();
+                }
 
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
-                return false;
+                throw;
+                //return false;
             }
             return true;
         }
