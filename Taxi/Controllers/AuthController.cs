@@ -18,6 +18,8 @@ using Taxi.Models.Customers;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Taxi.Controllers
 {
@@ -31,11 +33,12 @@ namespace Taxi.Controllers
         private IUsersRepository _userRepository;
         private IMapper _mapper;
         private IHttpContextAccessor _httpContextAccessor;
-        private const string baseWebUrl = "https://devtaxiapp.herokuapp.com";
+        private BaseUrl _baseUrl;
 
         public AuthController(UserManager<AppUser> userManager, 
             IJwtFactory jwtFactory,
             IOptions<JwtIssuerOptions> jwtOptions, 
+            IOptions<BaseUrl> baseUrl, 
             IEmailSender emailSender, 
             IUsersRepository usersRepository,
             IMapper mapper,
@@ -48,6 +51,7 @@ namespace Taxi.Controllers
             _userRepository = usersRepository;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _baseUrl = baseUrl.Value;
         }
 
 
@@ -81,7 +85,21 @@ namespace Taxi.Controllers
             }
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, customer.Id, ip,userAgent);
+
+            string jwt;
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions,
+                    customer.Id, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt)); ;
         }
@@ -170,9 +188,24 @@ namespace Taxi.Controllers
                 return NotFound();
             }
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
+
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
 
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, driver.Id, ip, userAgent);
+            string jwt = null;
+
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions,
+                    driver.Id, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt)); 
         }
@@ -202,7 +235,21 @@ namespace Taxi.Controllers
             var ip = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString();
             var userAgent = _httpContextAccessor.HttpContext.Request.Headers["User-Agent"];
 
-            var jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, admin.Id, ip, userAgent);
+            string jwt;
+
+            try
+            {
+                jwt = await Tokens.GenerateJwt(identity, _jwtFactory, credentials.UserName, _jwtOptions, admin.Id,
+                    ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
 
             return Ok(JsonConvert.DeserializeObject(jwt));
         }
@@ -284,12 +331,12 @@ namespace Taxi.Controllers
             //change links
             if (confirmResult.Succeeded)
             {
-                return Redirect(baseWebUrl+"/?letter=Success");
+                return Redirect(_baseUrl.BaseWebUrl+"/?letter=Success");
                 //return Ok("email_confirmed");
             }
             else
             {
-                return Redirect(baseWebUrl+"/?letter=Failed");
+                return Redirect(_baseUrl.BaseWebUrl+"/?letter=Failed");
                 //return BadRequest();
             }
         }
@@ -319,7 +366,7 @@ namespace Taxi.Controllers
         [HttpGet("reset", Name = "ResetPassword")]
         public IActionResult ResetPassword(string uid, string token)
         {
-            return Redirect(baseWebUrl + $"/reset-password?id={uid}&token={token}");
+            return Redirect(_baseUrl.BaseWebUrl + $"/reset-password?id={uid}&token={token}");
 
         }
         [Produces(contentType: "application/json")]
@@ -355,9 +402,21 @@ namespace Taxi.Controllers
 
             if (refreshToken == null)
                 return BadRequest();
-
-            var res = await _jwtFactory.RefreshToken(refreshToken, _jwtOptions,ip, userAgent);
-
+            
+            TokensDto res;
+            try
+            {
+                res = await _jwtFactory.RefreshToken(refreshToken, _jwtOptions, ip, userAgent);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Conflict();
+            }
+            catch (Exception e)
+            {
+                return BadRequest();
+            }
+            
             if (res == null)
                 return BadRequest();
             return Ok(res);

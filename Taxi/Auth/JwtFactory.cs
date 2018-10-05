@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Taxi.Models;
 using System.Security.Principal;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Taxi.Entities;
 using Taxi.Services;
 using Taxi.Helpers;
@@ -111,7 +112,7 @@ namespace Taxi.Auth
             return identity;
         }
 
-        public async Task<string> GenerateRefreshToken(string userName, ClaimsIdentity claimsIdentity, string ip, string userAgent)
+        public async Task<string> GenerateRefreshToken(string userName, ClaimsIdentity claimsIdentity, string ip, string userAgent, RefreshToken oldToken =null)
         {
             var claims = new List<Claim>
             {
@@ -133,28 +134,35 @@ namespace Taxi.Auth
 
             var hashedJwt = _userManager.PasswordHasher.HashPassword(new AppUser(), encodedJwt);
             //remove tokens for user if strange activity
+
+            bool delRes = true;
+
+            if (oldToken != null)
+            {
+                delRes = await _repository.DeleteRefleshToken(oldToken);
+            }
+
             var tokensFromDb = _repository.GetTokensForUser(claimsIdentity.FindFirst(Helpers.Constants.Strings.JwtClaimIdentifiers.Id).Value).ToList();
 
             if (tokensFromDb.Count() > 20)
             {
-                foreach (var t in tokensFromDb.ToList())
+                foreach (var t in tokensFromDb.ToArray())
                 {
                     if (t != null)
-                        await _repository.DeleteRefleshToken(t);
-
+                        delRes = await _repository.DeleteRefleshToken(t);
                 }
             }
             else
             {
-                foreach (var t in tokensFromDb.ToList())
+                foreach (var t in tokensFromDb.ToArray())
                 {
                     if (t.Expiration < ToUnixEpochDate(DateTime.UtcNow))
                     {
-                        await _repository.DeleteRefleshToken(t);
+                        delRes = await _repository.DeleteRefleshToken(t);
                     }
                 }
             }
-
+            
             await _repository.AddRefreshToken(new Entities.RefreshToken()
             {
                 Token = hashedJwt,
@@ -222,18 +230,18 @@ namespace Taxi.Auth
             }
 
 
-            if (tokensFromDb.Count() > 20)
-            {
-                foreach (var t in tokensFromDb.ToList())
-                {
-                    if (t!= null)
-                        await _repository.DeleteRefleshToken(t);
-                }
-            } else
-            {
-                if (curToken != null)
-                    await _repository.DeleteRefleshToken(curToken);
-            }
+            //if (tokensFromDb.Count() > 20)
+            //{
+            //    foreach (var t in tokensFromDb.ToList())
+            //    {
+            //        if (t!= null)
+            //            await _repository.DeleteRefleshToken(t);
+            //    }
+            //} else
+            //{
+            //    if (curToken != null)
+            //        await _repository.DeleteRefleshToken(curToken);
+            //}
 
 
             if (user == null)
@@ -242,9 +250,9 @@ namespace Taxi.Auth
             }
 
             var claimsIdentity = await GenerateClaimsIdentity(user.UserName, user.Id);
-
-            var newRefreshToken = await GenerateRefreshToken(user.UserName, claimsIdentity, ip, userAgent);
-
+                        
+            var newRefreshToken = await GenerateRefreshToken(user.UserName, claimsIdentity, ip, userAgent, curToken);
+            
             var newAccessToken =  await GenerateEncodedToken(user.UserName, claimsIdentity);
 
             var responce = new TokensDto()
