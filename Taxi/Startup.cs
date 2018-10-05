@@ -34,9 +34,7 @@ namespace Taxi
 {
     public class Startup
     {
-        
-        private IHostingEnvironment CurrentEnvironment { get; set; }
-        
+        private IHostingEnvironment CurrentEnvironment { get; set; }   
         public Startup( IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -132,7 +130,11 @@ namespace Taxi
             {
                 opts.ApiKey = Configuration["GOOGLE_API_KEY"];
             });
-
+            services.Configure<BaseUrl>(opts =>
+            {
+                opts.BaseWebUrl = Configuration["BaseWebUrl"];  
+            });
+            
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
