@@ -17,5 +17,6 @@ namespace Taxi.Models.Trips
 
         public string LastName { get; set; }
         
+        public int Rating { get; set; }
     }
 }

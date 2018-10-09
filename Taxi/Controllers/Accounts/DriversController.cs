@@ -110,6 +110,8 @@ namespace Taxi.Controllers.Accounts
 
             driverDto.ProfilePictureId = driverIdentity?.ProfilePicture?.Id;
 
+            driverDto.Rating = _usersRepository.GetRatingForDriver(driverDto.Id);
+
             return Ok(driverDto);
         }
         

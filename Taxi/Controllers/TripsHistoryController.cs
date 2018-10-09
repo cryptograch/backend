@@ -59,7 +59,7 @@ namespace Taxi.Controllers
                 {
                     CustomerId = t.CustomerId,
                     DriverId = t.DriverId,
-
+                    Rating = t.Rating,
                     Id = t.Id,
                     From = Helpers.Location.PointToPlaceDto(from),
                     To = Helpers.Location.PointToPlaceDto(to),
@@ -196,7 +196,7 @@ namespace Taxi.Controllers
                 {
                     CustomerId = t.CustomerId,
                     DriverId = t.DriverId,
-
+                    Rating = t.Rating,
                     Id = t.Id,
                     From = Helpers.Location.PointToPlaceDto(from),
                     To = Helpers.Location.PointToPlaceDto(to),

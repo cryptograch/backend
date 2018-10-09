@@ -10,6 +10,8 @@ namespace Taxi.Models.Trips
     {
         public Guid Id { get; set; }
 
+        public int Rating { get; set; }
+
         public PlaceDto From { get; set; }
 
         public PlaceDto To { get; set; }

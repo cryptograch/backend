@@ -46,6 +46,8 @@ namespace Taxi.Services
 
         Driver GetDriverById(Guid Id);
 
+        double GetRatingForDriver(Guid driverId);
+
         Customer GetCustomerByConnectionId(string connectionId);
 
         Driver GetDriverByConnectionId(string connectionId);
