@@ -283,7 +283,7 @@ namespace Taxi.Controllers
 
         [Authorize(Policy = "Customer")]
         [HttpPost("customer/approvefinish")]
-        public async Task<IActionResult> ApproveFinish()
+        public async Task<IActionResult> ApproveFinish(RatingDto rating)
         {
             var customer = _usersRepository.GetCustomerById(Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId)?.Value));
 
@@ -309,6 +309,8 @@ namespace Taxi.Controllers
 
             var tripHistory = Helpers.ComplexMapping.HistoryFromTrip(trip);
 
+            tripHistory.Rating = rating.Rating;
+
             var addres = await _tripsRepo.AddTripHistory(tripHistory);
 
             var res =_tripsRepo.RemoveTrip(customer.CurrentTrip.CustomerId);
@@ -322,14 +324,14 @@ namespace Taxi.Controllers
             var toReturn = new TripHistoryDto()
             {
                 CustomerId = tripHistory.CustomerId,
-                DriverId = tripHistory.DriverId,
-
+                DriverId = tripHistory.DriverId,            
                 Id = tripHistory.Id,
                 From = Helpers.Location.PointToPlaceDto(from),
                 To = Helpers.Location.PointToPlaceDto(to),
                 FinishTime = tripHistory.FinishTime,
                 Price = tripHistory.Price,
-                Distance = tripHistory.Distance
+                Distance = tripHistory.Distance,
+                Rating = tripHistory.Rating
             };//check if correctly maps from nullable
             
             return Ok(toReturn);

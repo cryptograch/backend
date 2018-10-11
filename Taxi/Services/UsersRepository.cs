@@ -162,7 +162,10 @@ namespace Taxi.Services
             {
                 var searchForWhereClause = paginationParameters.SearchQuery.Trim().ToLowerInvariant();
                  
-                beforePaging = beforePaging.Where(a => (a.FirstName + " "+ a.LastName + " " + a.Email + " "+ a.PhoneNumber).ToLowerInvariant().Contains(searchForWhereClause));
+                beforePaging = beforePaging.Where(a => a.FirstName.ToLowerInvariant().Contains(searchForWhereClause) ||
+                                                       a.LastName.ToLowerInvariant().Contains(searchForWhereClause) || 
+                                                       a.Email.ToLowerInvariant().Contains(searchForWhereClause) ||  
+                                                       a.PhoneNumber.ToLowerInvariant().Contains(searchForWhereClause));
             }
             
             if (paginationParameters.EmailConfirmed != null)
@@ -377,6 +380,16 @@ namespace Taxi.Services
                 .SingleOrDefault(o => o.Id == id);
 
             return driver;
+        }
+
+        public double GetRatingForDriver(Guid driverId)
+        {
+            var ratings = _dataContext.TripHistories.Where(t => t.DriverId == driverId && t.Rating > 0)
+                .Select(tr => tr.Rating).ToList();
+            var sum = ratings.Sum();
+            if (ratings.Count > 0)
+                return (double)sum / ratings.Count;
+            return 0;
         }
 
         public IEnumerable<Driver> GetDrivers()

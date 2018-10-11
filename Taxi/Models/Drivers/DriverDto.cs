@@ -22,5 +22,7 @@ namespace Taxi.Models
         public Guid? VehicleId { get; set; }
         
         public string ProfilePictureId { get; set; }
+
+        public double Rating { get; set; }
     }
 }
