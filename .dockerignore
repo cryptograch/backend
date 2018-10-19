@@ -1,14 +1,10 @@
+.dockerignore
+.env
 .git
-.ipynb_checkpoints/*
-/notebooks/*
-/unused/*
-Dockerfile
-.DS_Store
 .gitignore
-README.md
-env.*
-/devops/*
 .vs
-# To prevent storing dev/temporary container data
-*.csv
-/tmp/*
+.vscode
+docker-compose.yml
+docker-compose.*.yml
+*/bin
+*/obj
