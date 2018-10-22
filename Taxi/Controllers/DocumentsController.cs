@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using Taxi.Entities;
@@ -163,6 +164,87 @@ namespace Taxi.Controllers
             }
             return BadRequest();
         }
+
+        [Authorize(Policy = "DriverReg")]
+        [HttpPut("driverlicense/images")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> SetLicensesPicture(List<IFormFile> files)
+        {
+            var driverId = User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.DriverId)?.Value;
+
+            var driver = _usersRepository.GetDriverById(Guid.Parse(driverId));
+
+            long size = files.Sum(f => f.Length);
+
+            if (files.Count != 2)
+            {
+                ModelState.AddModelError(nameof(driver.DriverLicense), "Upload back and front images");
+                return BadRequest(ModelState);
+            }
+
+            for (int i = 0; i < files.Count; ++i)
+            {
+                if (!files[i].IsImage())
+                {
+                    ModelState.AddModelError(nameof(driver.DriverLicense), "File is not an image");
+                    return BadRequest(ModelState);
+                }
+            }
+
+            if (driver.DriverLicense != null)
+            {
+                foreach (var item in driver.DriverLicense.ImagesIds)
+                {
+                    await _uploadService.DeleteObjectAsync(driver.DriverLicense.ImageId);
+                }
+                driver.DriverLicense.ImagesIds.Clear();
+
+            }
+
+            if (driver.DriverLicense == null)
+            {
+                driver.DriverLicense = new DriverLicense() { };
+            }
+
+            for (int i = 0; i < files.Count; ++i)
+            {
+                var formFile = files[i];
+
+                
+                
+                if (formFile.Length > 0)
+                {
+                    var filename = ContentDispositionHeaderValue
+                        .Parse(formFile.ContentDisposition)
+                        .FileName
+                        .TrimStart().ToString();
+                    filename = _hostingEnvironment.WebRootPath + $@"\uploads" + $@"\{formFile.FileName}";
+                    size += formFile.Length;
+                    using (var fs = System.IO.File.Create(filename))
+                    {
+                        await formFile.CopyToAsync(fs);
+                        fs.Flush();
+                    }//these code snippets saves the uploaded files to the project directory
+                    var imageId = Guid.NewGuid().ToString() + Path.GetExtension(filename);
+                    await _uploadService.PutObjectToStorage(imageId.ToString(), filename);//this is the method to upload saved file to S3
+                    driver.DriverLicense.UpdateTime = DateTime.UtcNow;
+                    driver.DriverLicense.IsApproved = false;
+                    driver.DriverLicense.ImagesIds.Add(imageId);
+                    System.IO.File.Delete(filename);
+                }
+                else
+                {
+                    return BadRequest();
+                }
+
+            }
+            var res = await _usersRepository.UpdateDriverLicense(driver.DriverLicense);
+            if (!res)
+                return Conflict();
+            return Ok();
+        }
+
+
 
         [Authorize(Policy = "DriverReg")]
         [HttpGet("driverlicense")]

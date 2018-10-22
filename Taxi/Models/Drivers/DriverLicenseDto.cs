@@ -14,5 +14,7 @@ namespace Taxi.Models.Drivers
         public bool IsApproved { get; set; }
 
         public Guid DriverId { get; set; }
+
+        public List<string> ImagesIds { get; set; }
     }
 }

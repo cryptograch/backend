@@ -21,6 +21,8 @@ namespace Taxi.Entities
 
         public Guid DriverId { get; set; }
 
-        public bool IsApproved { get; set; } 
+        public bool IsApproved { get; set; }
+
+        public List<string> ImagesIds { get; set; } = new List<string>();
     }
 }
