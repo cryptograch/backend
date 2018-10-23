@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Taxi.Entities
 {
+    //todo: remove unused
     public class DriverLicense
     {
         public Guid Id { get; set; }

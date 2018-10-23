@@ -581,7 +581,10 @@ namespace Taxi.Services
         {
             _dataContext.DriverLicenses.Remove(license);
 
-            await _uploadService.DeleteObjectAsync(license.ImageId);
+            foreach (var im in license.ImagesIds)
+            {
+                await _uploadService.DeleteObjectAsync(im);
+            }
 
             try
             {
