@@ -24,6 +24,7 @@ namespace Taxi.Entities
 
         public bool IsApproved { get; set; }
 
-        public List<string> ImagesIds { get; set; } = new List<string>();
+        public string FrontId { get; set; }
+        public string BackId { get; set; }
     }
 }

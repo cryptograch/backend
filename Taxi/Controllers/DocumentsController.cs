@@ -191,14 +191,12 @@ namespace Taxi.Controllers
                 }
             }
 
-            if (driver.DriverLicense != null)
+            if (driver?.DriverLicense != null)
             {
-                foreach (var item in driver.DriverLicense.ImagesIds)
-                {
-                    await _uploadService.DeleteObjectAsync(item);
-                }
-                driver.DriverLicense.ImagesIds.Clear();
-
+                if (driver.DriverLicense.FrontId != null)
+                    await _uploadService.DeleteObjectAsync(driver.DriverLicense.FrontId);
+                if (driver.DriverLicense.BackId != null)
+                    await _uploadService.DeleteObjectAsync(driver.DriverLicense.BackId);
             }
 
             if (driver.DriverLicense == null)
@@ -229,7 +227,10 @@ namespace Taxi.Controllers
                     await _uploadService.PutObjectToStorage(imageId.ToString(), filename);//this is the method to upload saved file to S3
                     driver.DriverLicense.UpdateTime = DateTime.UtcNow;
                     driver.DriverLicense.IsApproved = false;
-                    driver.DriverLicense.ImagesIds.Add(imageId);
+                    if (i == 0) //front image
+                        driver.DriverLicense.FrontId = imageId;
+                    if (i == 1) //back image
+                        driver.DriverLicense.BackId = imageId;
                     System.IO.File.Delete(filename);
                 }
                 else
