@@ -163,15 +163,15 @@ namespace Taxi.Controllers.Accounts
 
             var comments = await _usersRepository.GetDriverComments(driverId);
 
-            var commntsDto = new List<DriverCommentDto>();
+            var commentsDto = new List<DriverCommentDto>();
 
             foreach (var c in comments)
             {
                 var comment = Mapper.Map<DriverCommentDto>(c);
-                commntsDto.Add(comment);
+                commentsDto.Add(comment);
             }
 
-            return Ok(comments);
+            return Ok(commentsDto);
         }
     }
 }

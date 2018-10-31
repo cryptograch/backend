@@ -125,7 +125,7 @@ namespace Taxi
 
                 options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
             });
-
+          
             services.Configure<GoogleApiOptions>(opts =>
             {
                 opts.ApiKey = Configuration["GOOGLE_API_KEY"];

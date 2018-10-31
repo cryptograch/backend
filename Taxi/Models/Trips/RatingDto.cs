@@ -18,6 +18,7 @@ namespace Taxi.Models.Trips
             get => _rating;
             set
             {
+                _rating = value;
                 if (value > _maxRating)
                     _rating = _maxRating;
                 if (value < _minRating)

@@ -245,7 +245,7 @@ namespace Taxi.Controllers
             if (customer == null)
                 return NotFound();
 
-            var res = Refund.Create((ulong)trip.ContractId, new DefaultControllerPattern(),
+            var res = Refund.Create((ulong)trip.ContractId , new DefaultControllerPattern(),
                 new User {PrivateKey = customer.Identity.PrivateKey}, ModelState);
 
             if (!ModelState.IsValid)
@@ -285,6 +285,9 @@ namespace Taxi.Controllers
         [HttpPost("customer/approvefinish")]
         public async Task<IActionResult> ApproveFinish([FromBody] RatingDto rating)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var customer = _usersRepository.GetCustomerById(Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId)?.Value));
 
             if (customer?.CurrentTrip == null)
@@ -457,7 +460,8 @@ namespace Taxi.Controllers
                 FromLongitude = tripCreationDto.From.Longitude,
                 ToLatitude = tripCreationDto.To.Latitude,
                 ToLongitude = tripCreationDto.To.Longitude,
-                TokenValue = tripEntity.Price
+                TokenValue = tripEntity.Price,
+                Id = new Random().Next(1000000000, 2000000000)    //for testing purposes todo:remove 
             };
 
             var addres = _tripsRepo.AddContract(contract);
