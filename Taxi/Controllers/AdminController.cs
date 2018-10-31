@@ -304,23 +304,23 @@ namespace Taxi.Controllers
             return Ok(licenseToReturn);
         }
         
-        [Authorize(Policy = "Admin")]
-        [HttpGet("driverlicenses/{driverId}/image")]
-        public async Task<IActionResult> GetLicensePicture(Guid driverId)
-        {
-            var driver = _usersRepository.GetDriverById(driverId);
+        //[Authorize(Policy = "Admin")]
+        //[HttpGet("driverlicenses/{driverId}/image")]
+        //public async Task<IActionResult> GetLicensePicture(Guid driverId)
+        //{
+        //    var driver = _usersRepository.GetDriverById(driverId);
 
-            if (driver?.DriverLicense == null)
-                return NotFound();
+        //    if (driver?.DriverLicense == null)
+        //        return NotFound();
 
-            FileDto res = await _uploadService.GetObjectAsync(driver.DriverLicense.ImageId);
+        //    FileDto res = await _uploadService.GetObjectAsync(driver.DriverLicense.ImageId);
 
-            if (res == null)
-                return NotFound();
+        //    if (res == null)
+        //        return NotFound();
 
-            res.Stream.Seek(0, SeekOrigin.Begin);
-            return File(res.Stream, res.ContentType);
-        }
+        //    res.Stream.Seek(0, SeekOrigin.Begin);
+        //    return File(res.Stream, res.ContentType);
+        //}
 
         [Authorize(Policy = "Admin")]
         [HttpGet("driverlicenses", Name = "GetDriverLicenses")]

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Taxi.Entities
 {
+    //todo: remove unused
     public class DriverLicense
     {
         public Guid Id { get; set; }
@@ -21,6 +22,9 @@ namespace Taxi.Entities
 
         public Guid DriverId { get; set; }
 
-        public bool IsApproved { get; set; } 
+        public bool IsApproved { get; set; }
+
+        public string FrontId { get; set; }
+        public string BackId { get; set; }
     }
 }

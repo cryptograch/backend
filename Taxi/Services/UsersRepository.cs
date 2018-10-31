@@ -592,10 +592,14 @@ namespace Taxi.Services
 
         public async Task<bool> RemoveDriverLicense(DriverLicense license)
         {
+            if (license.BackId != null)
+                await _uploadService.DeleteObjectAsync(license.BackId);
+
+            if (license.FrontId != null)
+                await _uploadService.DeleteObjectAsync(license.FrontId);
+
             _dataContext.DriverLicenses.Remove(license);
-
-            await _uploadService.DeleteObjectAsync(license.ImageId);
-
+            
             try
             {
                 await _dataContext.SaveChangesAsync();
