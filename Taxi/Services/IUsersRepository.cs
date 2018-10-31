@@ -84,5 +84,6 @@ namespace Taxi.Services
 
         Task<bool> UpdateDriverLicense(DriverLicense driverLicense);
         PagedList<AdminResponse> GetAdminResponses(string id, PaginationParameters resourceParameters);
+        Task<List<DriverComment>> GetDriverComments(Guid driverId);
     }
 }

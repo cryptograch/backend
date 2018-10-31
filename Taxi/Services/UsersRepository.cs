@@ -590,6 +590,12 @@ namespace Taxi.Services
             return PagedList<AdminResponse>.Create(beforePaging, resourceParameters.PageNumber, resourceParameters.PageSize);
         }
 
+        public async Task<List<DriverComment>> GetDriverComments(Guid driverId)
+        {
+            var comments = await _dataContext.DriverComments.Where(c => c.DriverId == driverId).ToListAsync();
+            return comments;
+        }
+
         public async Task<bool> RemoveDriverLicense(DriverLicense license)
         {
             if (license.BackId != null)

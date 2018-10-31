@@ -203,6 +203,12 @@ namespace Taxi.Services
             return await _dataContext.TripHistories.FindAsync(id);
         }
 
+        public List<Guid> GetCustomerIdsForDriverTrips(Guid driverId)
+        {
+            var ids = _dataContext.TripHistories.Where(t => t.DriverId == driverId).Select(c => c.CustomerId).ToList();
+            return ids;
+        }
+
         public async Task<List<TripHistoryRouteNode>> GetTripRouteNodes(Guid tripHistoryId)
         {
             return await _dataContext.TripHistoryRouteNodes.OrderBy(o => o.UpdateTime).Where(n=>n.TripHistoryId == tripHistoryId)

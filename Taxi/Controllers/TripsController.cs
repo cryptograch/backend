@@ -283,7 +283,7 @@ namespace Taxi.Controllers
 
         [Authorize(Policy = "Customer")]
         [HttpPost("customer/approvefinish")]
-        public async Task<IActionResult> ApproveFinish(RatingDto rating)
+        public async Task<IActionResult> ApproveFinish([FromBody] RatingDto rating)
         {
             var customer = _usersRepository.GetCustomerById(Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId)?.Value));
 

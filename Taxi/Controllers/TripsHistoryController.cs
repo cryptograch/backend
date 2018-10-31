@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Taxi.Entities;
 using Taxi.Helpers;
 using Taxi.Models;
 using Taxi.Models.Admins;
+using Taxi.Models.Drivers;
 using Taxi.Models.Trips;
 using Taxi.Services;
 
@@ -19,17 +21,63 @@ namespace Taxi.Controllers
         private ITripsRepository _tripsRepository;
         private IUrlHelper _urlHelper;
         private IResourceUriHelper _resourceUriHelper;
+        private IUsersRepository _usersRepository;
 
         public TripsHistoryController(ITripsRepository tripsRepository,
             IUrlHelper urlHelper,
-            IResourceUriHelper resourceUriHelper)
+            IResourceUriHelper resourceUriHelper,
+            IUsersRepository usersRepository)
         {
             _urlHelper = urlHelper;
             _tripsRepository = tripsRepository;
             _resourceUriHelper = resourceUriHelper;
+            _usersRepository = usersRepository;
         }
-        
-        
+
+        [HttpPost("comment")]
+        [Authorize(Policy = "Customer")]
+        public async Task<IActionResult> LeaveComment([FromBody] DriverCommentCreationDto comment)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var driver = _usersRepository.GetDriverById(comment.DriverId);
+
+            if (driver == null || string.IsNullOrEmpty(comment.Message))
+            {
+                return NotFound();
+            }
+            var customerId = Guid.Parse( User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId)?.Value);
+
+            var customerIds = _tripsRepository.GetCustomerIdsForDriverTrips(comment.DriverId);
+
+            if (!customerIds.Any(id => id == customerId))
+            {
+                ModelState.AddModelError(nameof(DriverCommentCreationDto), "No trips with driver");
+                return BadRequest(ModelState);
+            }
+
+            var commentEntity = new DriverComment()
+            {
+                CustomerId = customerId,
+                CreationTime = DateTime.UtcNow,
+                Message = comment.Message
+            };
+
+            driver.DriverComments.Add(commentEntity);
+
+            if (!await _usersRepository.UpdateDriver(driver))
+            {
+                return Conflict();
+            }
+
+            var commentDto = Mapper.Map<DriverCommentDto>(commentEntity);
+
+            return Ok(commentDto);
+        }
+
         [HttpGet("driver", Name = "GetDriverHistory")]
         [Authorize(Policy = "Driver")]
         public async Task<IActionResult> GetDriverHistory(TripHistoryResourceParameters resourceParameters)

@@ -152,5 +152,26 @@ namespace Taxi.Controllers.Accounts
 
             return NoContent();
         }
+        [HttpGet("{driverId}/comments")]
+        public async Task<IActionResult> GetCommentsForDriver(Guid driverId)
+        {
+            var driver = _usersRepository.GetDriverById(driverId);
+            if (driver == null)
+            {
+                return NotFound();
+            }
+
+            var comments = await _usersRepository.GetDriverComments(driverId);
+
+            var commntsDto = new List<DriverCommentDto>();
+
+            foreach (var c in comments)
+            {
+                var comment = Mapper.Map<DriverCommentDto>(c);
+                commntsDto.Add(comment);
+            }
+
+            return Ok(comments);
+        }
     }
 }
