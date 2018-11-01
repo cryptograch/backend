@@ -590,10 +590,11 @@ namespace Taxi.Services
             return PagedList<AdminResponse>.Create(beforePaging, resourceParameters.PageNumber, resourceParameters.PageSize);
         }
 
-        public async Task<List<DriverComment>> GetDriverComments(Guid driverId)
+        public async Task<PagedList<DriverComment>> GetDriverComments(Guid driverId, PaginationParameters resourceParameters)
         {
-            var comments = await _dataContext.DriverComments.Where(c => c.DriverId == driverId).ToListAsync();
-            return comments;
+            var beforePaging =_dataContext.DriverComments.OrderByDescending(co => co.CreationTime).Where(c => c.DriverId == driverId);
+
+            return PagedList<DriverComment>.Create(beforePaging, resourceParameters.PageNumber, resourceParameters.PageSize);
         }
 
         public async Task<bool> RemoveDriverLicense(DriverLicense license)
