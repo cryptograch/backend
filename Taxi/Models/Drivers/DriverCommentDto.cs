@@ -16,5 +16,8 @@ namespace Taxi.Models.Drivers
         public Guid DriverId { get; set; }
 
         public Guid CustomerId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string PictureId { get; set; }
     }
 }

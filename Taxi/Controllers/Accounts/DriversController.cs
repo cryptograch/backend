@@ -180,12 +180,21 @@ namespace Taxi.Controllers.Accounts
                 ? _resourceUriHelper.CreateResourceUri(paginationParameters, ResourceUriType.NextPage, nameof(GetCommentsForDriver)) : null;
 
             Response.Headers.Add("X-Pagination", Helpers.PaginationMetadata.GeneratePaginationMetadata(comments, paginationParameters, prevLink, nextLink));
-
+            
             var commentsDto = new List<DriverCommentDto>();
-
+            
             foreach (var c in comments)
             {
                 var comment = Mapper.Map<DriverCommentDto>(c);
+
+                var user = _usersRepository.GetCustomerById(c.CustomerId);
+
+                comment.PictureId = user.Identity.ProfilePicture?.Id;
+
+                comment.FirstName = user.Identity.FirstName;
+
+                comment.LastName = user.Identity.LastName;
+
                 commentsDto.Add(comment);
             }
 

@@ -352,7 +352,7 @@ namespace Taxi.Services
         
         public Customer GetCustomerById(Guid id)
         {
-            var customer = _dataContext.Customers.Include(d => d.Identity).Include(c=>c.CurrentTrip).FirstOrDefault(o => o.Id == id);
+            var customer = _dataContext.Customers.Include(c=>c.CurrentTrip).Include(d => d.Identity).ThenInclude(cu => cu.ProfilePicture).FirstOrDefault(o => o.Id == id);
 
             return customer;
         }
