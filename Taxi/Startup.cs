@@ -288,6 +288,7 @@ namespace Taxi
             app.UseSignalR(routes =>
             {
                 routes.MapHub<RouteHub>("/route");
+                routes.MapHub<ChatHub>("/chat");
             });
             
             app.UseMvc(routes =>
