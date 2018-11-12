@@ -2,15 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using StackExchange.Redis;
 using Taxi.Helpers.Creational;
+using Taxi.RedisEntities;
 
 namespace Taxi.Services
 {
     public class ChatDataRepository
     {
         private string subscriptionPrefix = "subscription";
-        string connectionPrefix = "connection";
+        private string connectionPrefix = "connection";
+        private string channelUsersPrefix = "channelUsers";
         private static IDatabase _database;
         private static ConnectionMultiplexer _redis;
         public ChatDataRepository()
@@ -51,6 +54,46 @@ namespace Taxi.Services
                 channels.Add(red.ToString());
             }
             return channels;
+        }
+
+        public void WriteMessagesForChannel(string channelId, UserMessage userMessage)
+        {
+            var json = JsonConvert.SerializeObject(userMessage);
+
+            _database.ListLeftPush(channelId, json);
+        }
+
+        public List<UserMessage> GetMessagesForChannel(string channelId, int l, int r)
+        {
+            var jsonString = _database.ListRange(channelId, l, r).Select(d => d.ToString());
+            
+            var messages = new List<UserMessage>();
+
+            foreach (var d in jsonString)
+            {
+                messages.Add( JsonConvert.DeserializeObject<UserMessage>(d));
+            }
+
+            return messages;
+        }
+
+        public void AddUserForChannel(string channelId,string uid)
+        {
+            _database.SetAdd(channelUsersPrefix + channelId, uid);
+        }
+
+        public List<string> GetUsersForChannel(string channelId)
+        {
+            var members = _database.SetMembers(channelUsersPrefix + channelId);
+
+            var uids = new List<string>();
+
+            foreach (var m in members)
+            {
+                uids.Add(m.ToString());
+            }
+
+            return uids;
         }
     }
 }

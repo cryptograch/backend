@@ -1,0 +1,97 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
+using Taxi.Entities;
+using Taxi.Helpers;
+using Taxi.Helpers.Creational;
+using Taxi.Models.Chat;
+using Taxi.Services;
+
+namespace Taxi.Controllers
+{
+    [Route("api/chat")]
+    public class ChatMessagesController : Controller
+    {
+        private ChatDataRepository _chatRepo;
+        private static IDatabase _database;
+        private static ConnectionMultiplexer _redis;
+        private UserManager<AppUser> _userManager;
+
+        public ChatMessagesController(UserManager<AppUser> userManager)
+        {
+            _chatRepo = new ChatDataRepository();
+            _redis = RedisConnectionFactory.GetConnection();
+            _database = _redis.GetDatabase();
+            _userManager = userManager;
+        }
+
+        [HttpGet("getmessages")]
+        [Authorize]
+        public IActionResult GetMessagesForChat(string channelId, int from, int to)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            if (!channelId.Contains(uid))
+            {
+                return NotFound();
+            }
+            
+            var messages = _chatRepo.GetMessagesForChannel(channelId, from, to);
+
+            return Ok(messages);
+        }
+
+        [HttpGet("getchannels")]
+        [Authorize]
+        public async Task<IActionResult> GetChannelsForUser()
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            var channels = _chatRepo.GetSubscriptionsForUser(uid);
+
+            var channelDtos = new List<ChannelDto>();
+
+            foreach (var c in channels)
+            {
+                var uids = _chatRepo.GetUsersForChannel(c);
+                
+                var dto =  new ChannelDto()
+                {
+                    Id = c,
+                    Members = new List<ChatUserDto>()
+                };
+                
+                foreach (var id in uids)
+                {
+                    var identity = await _userManager.FindByIdAsync(id);
+                    
+                    dto.Members.Add(new ChatUserDto()
+                    {
+                        IdentityId = identity.Id,
+                        FirstName = identity.FirstName,
+                        LastName = identity.LastName
+                    });
+                }
+                channelDtos.Add(dto);
+            }
+
+            return Ok(channelDtos);
+        }
+
+
+        private string GetChannelName(List<string> ids)
+        {
+            ids.Sort();
+
+            string chanalName = string.Join('_', ids);
+
+            return chanalName;
+        }
+
+    }
+}

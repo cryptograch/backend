@@ -61,6 +61,8 @@ namespace Taxi.Controllers.Accounts
 
             _mapper.Map(customer, customerDto);
 
+            customerDto.IdentityId = customerIdentity.Id;
+
             customerDto.ProfilePictureId = customerIdentity?.ProfilePicture?.Id;
 
             return Ok(customerDto);

@@ -110,6 +110,8 @@ namespace Taxi.Controllers.Accounts
 
             _mapper.Map(driver, driverDto);
 
+            driverDto.IdentityId = driverIdentity.Id;
+
             driverDto.VehicleId = driver.Vehicle?.Id;
 
             driverDto.ProfilePictureId = driverIdentity?.ProfilePicture?.Id;

@@ -4,11 +4,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 using StackExchange.Redis;
 using Taxi.Helpers.Creational;
+using Taxi.RedisEntities;
 using Taxi.Services;
 
 namespace Taxi.Hubs
@@ -54,6 +58,7 @@ namespace Taxi.Hubs
             {
                 if (!_chatRepo.GetSubscriptionsForUser(id).Contains(chanalName)) // todo: optimaze
                 {
+                    _chatRepo.AddUserForChannel(chanalName, id);
                     _chatRepo.AddSubscriptionForUser(id, chanalName);
                     if (_chatRepo.GetConnectionForUid(id) != null)
                     {
@@ -73,7 +78,24 @@ namespace Taxi.Hubs
 
             var subscriber = _redis.GetSubscriber();
 
-            subscriber.Publish(chanalName, message); //todo : store messages
+            var userMessage = new UserMessageForChannel()
+            {
+                Message = message,
+                PublicationTime = DateTime.UtcNow,
+                UserId = uid,
+                Channel = chanalName
+            };
+
+            var json = JsonConvert.SerializeObject(userMessage);
+
+            subscriber.Publish(chanalName, json); 
+
+            _chatRepo.WriteMessagesForChannel(chanalName, new UserMessage()
+            {
+                Message = userMessage.Message,
+                PublicationTime = userMessage.PublicationTime,
+                UserId = userMessage.UserId
+            });
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
@@ -119,7 +141,7 @@ namespace Taxi.Hubs
                     if (connId != null)
                     {
 
-                        _hubContext.Clients.Client(connId).SendAsync("publication", (string)channel + (string)message);
+                        _hubContext.Clients.Client(connId).SendAsync("publication", (string)message);
                     }
                 }
                 catch (Exception e)
