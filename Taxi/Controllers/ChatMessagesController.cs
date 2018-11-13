@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using StackExchange.Redis;
 using Taxi.Entities;
 using Taxi.Helpers;
 using Taxi.Helpers.Creational;
+using Taxi.Models.Admins;
 using Taxi.Models.Chat;
 using Taxi.Services;
 
@@ -21,14 +24,47 @@ namespace Taxi.Controllers
         private static IDatabase _database;
         private static ConnectionMultiplexer _redis;
         private UserManager<AppUser> _userManager;
+        private IUsersRepository _usersRepository;
 
-        public ChatMessagesController(UserManager<AppUser> userManager)
+        public ChatMessagesController(UserManager<AppUser> userManager, IUsersRepository usersRepository)
         {
             _chatRepo = new ChatDataRepository();
             _redis = RedisConnectionFactory.GetConnection();
             _database = _redis.GetDatabase();
+            _usersRepository = usersRepository;
             _userManager = userManager;
         }
+
+        [HttpGet("getuserinfo/{id}")]
+        public async Task<IActionResult> GetUserInfo(string id)
+        {
+            var user = _usersRepository.GetUser(id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var userDto = Mapper.Map<UserDto>(user);
+
+            var claims = await _userManager.GetClaimsAsync(user);
+
+            foreach (var c in claims)
+            {
+                if (c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Rol)
+                    userDto.Roles.Add(c.Value);
+                if (c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId ||
+                    c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.DriverId ||
+                    c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.AdminId)
+                {
+                    userDto.Ids[c.Type] = c.Value;
+                }
+            }
+
+            userDto.ProfilePictureId = user.ProfilePicture?.Id;
+            return Ok(userDto);
+        }
+
 
         [HttpGet("getmessages")]
         [Authorize]
@@ -82,16 +118,6 @@ namespace Taxi.Controllers
 
             return Ok(channelDtos);
         }
-
-
-        private string GetChannelName(List<string> ids)
-        {
-            ids.Sort();
-
-            string chanalName = string.Join('_', ids);
-
-            return chanalName;
-        }
-
+        
     }
 }
