@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Amazon.Auth.AccessControlPolicy;
 using GeoAPI.Geometries;
@@ -18,6 +20,7 @@ using TaxiCoinCoreLibrary.RequestObjectPatterns;
 using Microsoft.Extensions.Configuration;
 using Taxi.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 
 namespace Taxi.Controllers
 {
@@ -409,6 +412,8 @@ namespace Taxi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            bool callback = Request.Headers.ContainsKey("callback");
+
             var customer = _usersRepository.GetCustomerById(Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.CustomerId)?.Value));
 
             if (customer == null)
@@ -424,7 +429,8 @@ namespace Taxi.Controllers
                 CreationTime = DateTime.UtcNow,
                 CustomerId = customer.Id,
                 From = Helpers.Location.pointFromLatLng(tripCreationDto.From.Latitude, tripCreationDto.From.Longitude),
-                To = Helpers.Location.pointFromLatLng(tripCreationDto.To.Latitude, tripCreationDto.To.Longitude)
+                To = Helpers.Location.pointFromLatLng(tripCreationDto.To.Latitude, tripCreationDto.To.Longitude),
+                Callback = callback
             };
             
             #region CalcLength
@@ -619,10 +625,21 @@ namespace Taxi.Controllers
             trip.DriverTakeTripTime = DateTime.UtcNow;
 
             var res = await _tripsRepo.UpdateTrip(trip);
-
+            
             if (res != true)
                 return Conflict();
+            //send notification to telegram client
 
+            var customer = _usersRepository.GetCustomerById(trip.CustomerId);
+
+            var client = new HttpClient();
+
+            var uri = "https://taxicoinbot.herokuapp.com/aproved";
+
+            var emailInJson = JsonConvert.SerializeObject(new Dictionary<string, string> { {"email", customer.Identity.Email.ToLowerInvariant() } });
+
+            await client.PostAsync(uri, new StringContent(emailInJson, Encoding.UTF8, "application/json"));
+            
             return Ok(orderRes);
         }
         

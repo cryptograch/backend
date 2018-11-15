@@ -43,6 +43,8 @@ namespace Taxi.Entities
         public DateTime StartTime { get; set; }
 
         public DateTime FinishTime { get; set; }
+
+        public bool Callback { get; set; }
     }
 }
  
