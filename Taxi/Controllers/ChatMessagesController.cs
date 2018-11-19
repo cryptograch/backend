@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Amazon.S3;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -104,14 +105,17 @@ namespace Taxi.Controllers
                 
                 foreach (var id in uids)
                 {
-                    var identity = await _userManager.FindByIdAsync(id);
-                    
-                    dto.Members.Add(new ChatUserDto()
+                    var identity = _usersRepository.GetUser(id);
+                    if (identity != null)
                     {
-                        IdentityId = identity.Id,
-                        FirstName = identity.FirstName,
-                        LastName = identity.LastName
-                    });
+                        dto.Members.Add(new ChatUserDto()
+                        {
+                            IdentityId = identity.Id,
+                            FirstName = identity.FirstName,
+                            LastName = identity.LastName,
+                            ProfilePictureId = identity.ProfilePicture?.Id
+                        });
+                    }
                 }
                 channelDtos.Add(dto);
             }

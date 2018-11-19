@@ -25,13 +25,14 @@ namespace Taxi.Hubs
         private static ConnectionMultiplexer _redis;
         private IHubContext<ChatHub> _hubContext;
         private static ConcurrentDictionary<string, ISubscriber> _subscribers = new ConcurrentDictionary<string, ISubscriber>();
-
-        public ChatHub(IHubContext<ChatHub> hubContext)
+        private IUsersRepository _usersRepository;
+        public ChatHub(IHubContext<ChatHub> hubContext, IUsersRepository usersRepository)
         {
             _chatRepo = new ChatDataRepository();
             _redis = RedisConnectionFactory.GetConnection();
             _database = _redis.GetDatabase();
             _hubContext = hubContext;
+            _usersRepository = usersRepository;
         }
         public override async Task OnConnectedAsync()
         {
@@ -46,9 +47,15 @@ namespace Taxi.Hubs
             await base.OnConnectedAsync();
         }
         
-        public void Subscribe(string secondUserId)
+        public async Task Subscribe(string secondUserId)
         {
             var uid = Context.User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)?.Value;
+            
+            if (string.IsNullOrEmpty(uid) || _usersRepository.GetUser(uid) == null)
+            {
+                await Clients.Caller.SendAsync("onerror", "User not found");
+                return;
+            }
 
             List<string> ids = new List<string> {uid, secondUserId};
 
@@ -98,7 +105,7 @@ namespace Taxi.Hubs
             });
         }
 
-        public override Task OnDisconnectedAsync(Exception exception)
+        public override async Task OnDisconnectedAsync(Exception exception)
         {
             var uid = Context.User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)?.Value;
 
@@ -108,7 +115,7 @@ namespace Taxi.Hubs
 
             _subscribers.TryRemove(uid, out _ );
 
-            return base.OnDisconnectedAsync(exception);
+            await base.OnDisconnectedAsync(exception);
         }
 
         private string GetChannelName(List<string> ids)
