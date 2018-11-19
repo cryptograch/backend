@@ -9,6 +9,8 @@ namespace Taxi.Models
     {
         public Guid Id { get; set; }
 
+        public string IdentityId { get; set; }
+
         public string Email { get; set; }
 
         public string PhoneNumber { get; set; }
@@ -22,5 +24,7 @@ namespace Taxi.Models
         public Guid? VehicleId { get; set; }
         
         public string ProfilePictureId { get; set; }
+
+        public double Rating { get; set; }
     }
 }

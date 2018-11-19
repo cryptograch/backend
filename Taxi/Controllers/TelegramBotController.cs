@@ -39,11 +39,11 @@ namespace Taxi.Controllers
         }
 
         [HttpPost("IsRegistered", Name = "IsRegistered")]
-        public IActionResult IsRegistered([FromBody]IsRegisteredDto credentials)
+        public async Task<IActionResult> IsRegistered([FromBody]IsRegisteredDto credentials)
         {
             if (ModelState.IsValid)
             {
-                if (_dbContext.Customers.Where(u => u.Identity.Email == credentials.Email).Any())
+                if ((await  _userManager.FindByEmailAsync(credentials.Email)) != null)
                 {
                     return Ok(true);
                 }

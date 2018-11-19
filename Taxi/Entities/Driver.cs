@@ -27,5 +27,7 @@ namespace Taxi.Entities
         public DriverLicense DriverLicense { get; set; }
 
         public Point Location { get; set; }
+
+        public List<DriverComment> DriverComments { get; set; } = new List<DriverComment>();
     }
 }

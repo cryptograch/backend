@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Taxi.Entities;
 using Taxi.Helpers;
@@ -11,15 +12,13 @@ namespace Taxi.Services
 {
     public interface ITripsRepository
     {
-       // bool SetTrip(Trip trip);
+        List<Guid> GetCustomerIdsForDriverTrips(Guid driverId);
 
         Task<List<TripHistoryRouteNode>> GetTripRouteNodes(Guid tripId);
 
         bool RemoveTrip(Guid customerId);
         
         Trip GetTrip(Guid customerId, bool includeRoutes = false);
-
-   //     bool UpdateTripLocation(double lon, double lat, Guid customerId);
 
         PagedList<TripDto> GetNearTrips(double lon, double lat, PaginationParameters paginationParameters);
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -10,9 +11,10 @@ using Taxi.Data;
 namespace Taxi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20181009103653_rank")]
+    partial class rank
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -278,36 +280,12 @@ namespace Taxi.Migrations
                     b.ToTable("Drivers");
                 });
 
-            modelBuilder.Entity("Taxi.Entities.DriverComment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<DateTime>("CreationTime");
-
-                    b.Property<Guid>("CustomerId");
-
-                    b.Property<Guid>("DriverId");
-
-                    b.Property<string>("Message");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DriverId");
-
-                    b.ToTable("DriverComments");
-                });
-
             modelBuilder.Entity("Taxi.Entities.DriverLicense", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("BackId");
-
                     b.Property<Guid>("DriverId");
-
-                    b.Property<string>("FrontId");
 
                     b.Property<string>("ImageId");
 
@@ -406,8 +384,6 @@ namespace Taxi.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
-
-                    b.Property<bool>("Callback");
 
                     b.Property<long>("ContractId");
 
@@ -620,14 +596,6 @@ namespace Taxi.Migrations
                     b.HasOne("Taxi.Entities.AppUser", "Identity")
                         .WithMany()
                         .HasForeignKey("IdentityId");
-                });
-
-            modelBuilder.Entity("Taxi.Entities.DriverComment", b =>
-                {
-                    b.HasOne("Taxi.Entities.Driver", "Driver")
-                        .WithMany("DriverComments")
-                        .HasForeignKey("DriverId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Taxi.Entities.DriverLicense", b =>

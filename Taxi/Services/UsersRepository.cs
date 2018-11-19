@@ -162,7 +162,10 @@ namespace Taxi.Services
             {
                 var searchForWhereClause = paginationParameters.SearchQuery.Trim().ToLowerInvariant();
                  
-                beforePaging = beforePaging.Where(a => (a.FirstName + " "+ a.LastName + " " + a.Email + " "+ a.PhoneNumber).ToLowerInvariant().Contains(searchForWhereClause));
+                beforePaging = beforePaging.Where(a => a.FirstName.ToLowerInvariant().Contains(searchForWhereClause) ||
+                                                       a.LastName.ToLowerInvariant().Contains(searchForWhereClause) || 
+                                                       a.Email.ToLowerInvariant().Contains(searchForWhereClause) ||  
+                                                       a.PhoneNumber.ToLowerInvariant().Contains(searchForWhereClause));
             }
             
             if (paginationParameters.EmailConfirmed != null)
@@ -349,7 +352,7 @@ namespace Taxi.Services
         
         public Customer GetCustomerById(Guid id)
         {
-            var customer = _dataContext.Customers.Include(d => d.Identity).Include(c=>c.CurrentTrip).FirstOrDefault(o => o.Id == id);
+            var customer = _dataContext.Customers.Include(c=>c.CurrentTrip).Include(d => d.Identity).ThenInclude(cu => cu.ProfilePicture).FirstOrDefault(o => o.Id == id);
 
             return customer;
         }
@@ -377,6 +380,16 @@ namespace Taxi.Services
                 .SingleOrDefault(o => o.Id == id);
 
             return driver;
+        }
+
+        public double GetRatingForDriver(Guid driverId)
+        {
+            var ratings = _dataContext.TripHistories.Where(t => t.DriverId == driverId && t.Rating > 0)
+                .Select(tr => tr.Rating).ToList();
+            var sum = ratings.Sum();
+            if (ratings.Count > 0)
+                return (double)sum / ratings.Count;
+            return 0;
         }
 
         public IEnumerable<Driver> GetDrivers()
@@ -577,12 +590,23 @@ namespace Taxi.Services
             return PagedList<AdminResponse>.Create(beforePaging, resourceParameters.PageNumber, resourceParameters.PageSize);
         }
 
+        public async Task<PagedList<DriverComment>> GetDriverComments(Guid driverId, PaginationParameters resourceParameters)
+        {
+            var beforePaging =_dataContext.DriverComments.OrderByDescending(co => co.CreationTime).Where(c => c.DriverId == driverId);
+
+            return PagedList<DriverComment>.Create(beforePaging, resourceParameters.PageNumber, resourceParameters.PageSize);
+        }
+
         public async Task<bool> RemoveDriverLicense(DriverLicense license)
         {
+            if (license.BackId != null)
+                await _uploadService.DeleteObjectAsync(license.BackId);
+
+            if (license.FrontId != null)
+                await _uploadService.DeleteObjectAsync(license.FrontId);
+
             _dataContext.DriverLicenses.Remove(license);
-
-            await _uploadService.DeleteObjectAsync(license.ImageId);
-
+            
             try
             {
                 await _dataContext.SaveChangesAsync();

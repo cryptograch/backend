@@ -60,5 +60,7 @@ namespace Taxi.Data
         public DbSet<RefundRequest> RefundRequests { get; set; }
 
         public DbSet<AdminResponse> AdminResponces { get; set; }
+
+        public DbSet<DriverComment> DriverComments { get; set; }
     }
 }

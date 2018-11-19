@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Taxi.Entities
+namespace Taxi.Models.Drivers
 {
-    public class DriverComment
+    public class DriverCommentDto
     {
         public Guid Id { get; set; }
 
@@ -15,8 +15,9 @@ namespace Taxi.Entities
 
         public Guid DriverId { get; set; }
 
-        public Driver Driver { get; set; }
-
         public Guid CustomerId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string PictureId { get; set; }
     }
 }

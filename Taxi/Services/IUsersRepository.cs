@@ -46,6 +46,8 @@ namespace Taxi.Services
 
         Driver GetDriverById(Guid Id);
 
+        double GetRatingForDriver(Guid driverId);
+
         Customer GetCustomerByConnectionId(string connectionId);
 
         Driver GetDriverByConnectionId(string connectionId);
@@ -82,5 +84,6 @@ namespace Taxi.Services
 
         Task<bool> UpdateDriverLicense(DriverLicense driverLicense);
         PagedList<AdminResponse> GetAdminResponses(string id, PaginationParameters resourceParameters);
+        Task<PagedList<DriverComment>> GetDriverComments(Guid driverId, PaginationParameters resourceParameters);
     }
 }

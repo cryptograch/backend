@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Taxi.Entities;
+using Taxi.Helpers;
 using Taxi.Models;
 using Taxi.Models.Drivers;
 using Taxi.Services;
@@ -22,14 +23,17 @@ namespace Taxi.Controllers.Accounts
         private IUsersRepository _usersRepository;
         private IEmailSender _emailSender;
         private IUploadService _uploadService;
+        private IResourceUriHelper _resourceUriHelper;
 
-        public DriversController(UserManager<AppUser> userManager, IMapper mapper, IUsersRepository usersRepository, IEmailSender emailSender, IUploadService uploadService)
+
+        public DriversController(UserManager<AppUser> userManager, IMapper mapper, IUsersRepository usersRepository, IEmailSender emailSender, IUploadService uploadService, IResourceUriHelper resourceUriHelper)
         {
             _mapper = mapper;
             _userManager = userManager;
             _usersRepository = usersRepository;
             _emailSender = emailSender;
             _uploadService = uploadService;
+            _resourceUriHelper = resourceUriHelper;
         }
 
         [ProducesResponseType(201)]
@@ -106,9 +110,13 @@ namespace Taxi.Controllers.Accounts
 
             _mapper.Map(driver, driverDto);
 
+            driverDto.IdentityId = driverIdentity.Id;
+
             driverDto.VehicleId = driver.Vehicle?.Id;
 
             driverDto.ProfilePictureId = driverIdentity?.ProfilePicture?.Id;
+
+            driverDto.Rating = _usersRepository.GetRatingForDriver(driverDto.Id);
 
             return Ok(driverDto);
         }
@@ -149,6 +157,50 @@ namespace Taxi.Controllers.Accounts
                 return Conflict();
 
             return NoContent();
+        }
+        [HttpGet("{driverId}/comments", Name = "GetCommentsForDriver")]
+        public async Task<IActionResult> GetCommentsForDriver(Guid driverId, [FromQuery] PaginationParameters paginationParameters)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var driver = _usersRepository.GetDriverById(driverId);
+
+            if (driver == null)
+            {
+                return NotFound();
+            }
+
+            var comments = await _usersRepository.GetDriverComments(driverId, paginationParameters);
+
+            var prevLink = comments.HasPrevious
+                ? _resourceUriHelper.CreateResourceUri(paginationParameters, ResourceUriType.PrevoiusPage, nameof(GetCommentsForDriver)) : null;
+
+            var nextLink = comments.HasNext
+                ? _resourceUriHelper.CreateResourceUri(paginationParameters, ResourceUriType.NextPage, nameof(GetCommentsForDriver)) : null;
+
+            Response.Headers.Add("X-Pagination", Helpers.PaginationMetadata.GeneratePaginationMetadata(comments, paginationParameters, prevLink, nextLink));
+            
+            var commentsDto = new List<DriverCommentDto>();
+            
+            foreach (var c in comments)
+            {
+                var comment = Mapper.Map<DriverCommentDto>(c);
+
+                var user = _usersRepository.GetCustomerById(c.CustomerId);
+
+                comment.PictureId = user.Identity.ProfilePicture?.Id;
+
+                comment.FirstName = user.Identity.FirstName;
+
+                comment.LastName = user.Identity.LastName;
+
+                commentsDto.Add(comment);
+            }
+
+            return Ok(commentsDto);
         }
     }
 }

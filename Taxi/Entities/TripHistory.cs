@@ -35,6 +35,8 @@ namespace Taxi.Entities
 
         public double Distance { get; set; }
 
+        public int Rating { get; set; }
+
         public List<TripHistoryRouteNode> TripHistoryRouteNodes { get; set; } = new List<TripHistoryRouteNode>();
     }
 }

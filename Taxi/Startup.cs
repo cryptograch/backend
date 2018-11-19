@@ -125,7 +125,7 @@ namespace Taxi
 
                 options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
             });
-
+          
             services.Configure<GoogleApiOptions>(opts =>
             {
                 opts.ApiKey = Configuration["GOOGLE_API_KEY"];
@@ -288,6 +288,7 @@ namespace Taxi
             app.UseSignalR(routes =>
             {
                 routes.MapHub<RouteHub>("/route");
+                routes.MapHub<ChatHub>("/chat");
             });
             
             app.UseMvc(routes =>
