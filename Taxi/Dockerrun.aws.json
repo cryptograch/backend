@@ -1,7 +1,7 @@
 {
  "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "vosmushko/taxi:post67",
+    "Name": "vosmushko/taxi:post68",
     "Update": "false"
   },
  "Ports": [

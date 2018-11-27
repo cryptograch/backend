@@ -119,6 +119,11 @@ namespace Taxi.Controllers
 
             long size = files.Sum(f => f.Length);
 
+            if (files.Count < 1)
+            {
+                return NotFound();
+            }
+
             var formFile = files[0];
 
             if (!formFile.IsImage())
@@ -171,6 +176,11 @@ namespace Taxi.Controllers
             var driver = _usersRepository.GetDriverById(Guid.Parse(driverId));
 
             long size = files.Sum(f => f.Length);
+
+            if (files.Count < 1)
+            {
+                return NotFound();
+            }
 
             var formFile = files[0];
 
