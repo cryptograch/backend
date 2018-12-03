@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Org.BouncyCastle.Asn1;
 using StackExchange.Redis;
 using Taxi.Entities;
 using Taxi.Helpers;
@@ -72,8 +74,8 @@ namespace Taxi.Controllers
         public IActionResult GetMessagesForChat(string channelId, int from, int to)
         {
             var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
-
-            if (!channelId.Contains(uid))
+            
+            if (string.IsNullOrWhiteSpace(channelId) || !channelId.Contains(uid))
             {
                 return NotFound();
             }
@@ -121,6 +123,23 @@ namespace Taxi.Controllers
             }
 
             return Ok(channelDtos);
+        }
+        [Authorize]
+        [HttpDelete("chat/{channelId}")]
+        public async Task<IActionResult> RemoveChannelForUser(string channelId)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            var channel = _chatRepo.GetSubscriptionsForUser(uid)?.FirstOrDefault(c => c == channelId);
+            
+            if (channel == null)
+            {
+                return NotFound();
+            }
+
+            _chatRepo.RemoveSubscriptonForUser(uid, channel);
+
+            return NoContent();
         }
         
     }

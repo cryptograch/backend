@@ -36,15 +36,25 @@ namespace Taxi.Hubs
         }
         public override async Task OnConnectedAsync()
         {
-            var uid = Context.User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)?.Value; // todo : check if user exists
+            try
+            {
+                var uid = Context.User.Claims
+                    .FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)
+                    ?.Value; // todo : check if user exists
 
-            _chatRepo.SetUserIdForConnection(uid, Context.ConnectionId);
+                _chatRepo.SetUserIdForConnection(uid, Context.ConnectionId);
 
-            _subscribers.TryAdd(uid, _redis.GetSubscriber());
-            
-            ConnectAllSubscriptionsForUser(uid);
+                _subscribers.TryAdd(uid, _redis.GetSubscriber());
+
+                ConnectAllSubscriptionsForUser(uid);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
 
             await base.OnConnectedAsync();
+            
         }
         
         public async Task Subscribe(string secondUserId)
@@ -59,20 +69,8 @@ namespace Taxi.Hubs
 
             List<string> ids = new List<string> {uid, secondUserId};
 
-            var chanalName = GetChannelName(ids);
-            
-            foreach (var id in ids)
-            {
-                if (!_chatRepo.GetSubscriptionsForUser(id).Contains(chanalName)) // todo: optimaze
-                {
-                    _chatRepo.AddUserForChannel(chanalName, id);
-                    _chatRepo.AddSubscriptionForUser(id, chanalName);
-                    if (_chatRepo.GetConnectionForUid(id) != null)
-                    {
-                        ConnectSubscriptionForUser(chanalName, id);
-                    }
-                }
-            }        
+            SubscribeUsersWhichAreNot(ids);
+          
         }
 
         public void Publish(string secondUserId, string message)
@@ -80,6 +78,8 @@ namespace Taxi.Hubs
             var uid = Context.User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)?.Value;
 
             List<string> ids = new List<string> { uid, secondUserId };
+
+            SubscribeUsersWhichAreNot(ids);
 
             string chanalName = GetChannelName(ids);
 
@@ -110,12 +110,30 @@ namespace Taxi.Hubs
             var uid = Context.User.Claims.FirstOrDefault(c => c.Type == Helpers.Constants.Strings.JwtClaimIdentifiers.Id)?.Value;
 
             _chatRepo.RemoveUserIdForConnection(uid);
-
+            
             DisconnectSubscriptionsForUser(uid);
 
             _subscribers.TryRemove(uid, out _ );
 
             await base.OnDisconnectedAsync(exception);
+        }
+
+        private void SubscribeUsersWhichAreNot(List<string> ids) 
+        {
+            var chanalName = GetChannelName(ids);
+
+            foreach (var id in ids)
+            {
+                if (!_chatRepo.GetSubscriptionsForUser(id).Contains(chanalName)) // todo: optimaze
+                {
+                    _chatRepo.AddUserForChannel(chanalName, id);
+                    _chatRepo.AddSubscriptionForUser(id, chanalName);
+                    if (_chatRepo.GetConnectionForUid(id) != null)
+                    {
+                        ConnectSubscriptionForUser(chanalName, id);
+                    }
+                }
+            }
         }
 
         private string GetChannelName(List<string> ids)
@@ -161,7 +179,12 @@ namespace Taxi.Hubs
         private void DisconnectSubscriptionsForUser(string uid)
         {
             _subscribers.TryGetValue(uid, out var subscriber);
-            subscriber?.UnsubscribeAll();
+            var subscriptions = _chatRepo.GetSubscriptionsForUser(uid);
+            foreach (var s in subscriptions)
+            {
+                subscriber?.Unsubscribe(s);
+            }
+            
         }
     }
 }

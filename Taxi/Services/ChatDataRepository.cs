@@ -56,6 +56,14 @@ namespace Taxi.Services
             return channels;
         }
 
+        public void RemoveSubscriptonForUser(string uid, string channelId)
+        {
+            _database.SetRemove(subscriptionPrefix + uid, channelId);
+            if (_database.SetContains(subscriptionPrefix + uid, channelId)) //todo: just for testing purposes remove;
+            {
+                throw new ArgumentException();
+            }
+        }
         public void WriteMessagesForChannel(string channelId, UserMessage userMessage)
         {
             var json = JsonConvert.SerializeObject(userMessage);
@@ -95,5 +103,7 @@ namespace Taxi.Services
 
             return uids;
         }
+
+
     }
 }
