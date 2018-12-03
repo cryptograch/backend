@@ -91,6 +91,31 @@ namespace Taxi.Controllers
         {
             var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
 
+            var channelDtos = getChannelsForUser(uid);  
+
+            return Ok(channelDtos);
+        }
+
+        [Authorize]
+        [HttpDelete("chat/{channelId}")]
+        public async Task<IActionResult> RemoveChannelForUser(string channelId)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            var channel = _chatRepo.GetSubscriptionsForUser(uid)?.FirstOrDefault(c => c == channelId);
+            
+            if (channel == null)
+            {
+                return NotFound();
+            }
+
+            _chatRepo.RemoveSubscriptonForUser(uid, channel);
+
+            return Ok(getChannelsForUser(uid));
+        }
+
+        private List<ChannelDto> getChannelsForUser(string uid)
+        {
             var channels = _chatRepo.GetSubscriptionsForUser(uid);
 
             var channelDtos = new List<ChannelDto>();
@@ -98,13 +123,13 @@ namespace Taxi.Controllers
             foreach (var c in channels)
             {
                 var uids = _chatRepo.GetUsersForChannel(c);
-                
-                var dto =  new ChannelDto()
+
+                var dto = new ChannelDto()
                 {
                     Id = c,
                     Members = new List<ChatUserDto>()
                 };
-                
+
                 foreach (var id in uids)
                 {
                     var identity = _usersRepository.GetUser(id);
@@ -122,25 +147,7 @@ namespace Taxi.Controllers
                 channelDtos.Add(dto);
             }
 
-            return Ok(channelDtos);
-        }
-        [Authorize]
-        [HttpDelete("chat/{channelId}")]
-        public async Task<IActionResult> RemoveChannelForUser(string channelId)
-        {
-            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
-
-            var channel = _chatRepo.GetSubscriptionsForUser(uid)?.FirstOrDefault(c => c == channelId);
-            
-            if (channel == null)
-            {
-                return NotFound();
-            }
-
-            _chatRepo.RemoveSubscriptonForUser(uid, channel);
-
-            return NoContent();
-        }
-        
+            return channelDtos;
+        } 
     }
 }
