@@ -95,8 +95,11 @@ namespace Taxi.Hubs
 
             var json = JsonConvert.SerializeObject(userMessage);
 
-            subscriber.Publish(chanalName, json); 
-
+            subscriber.Publish(chanalName, json);
+            foreach (var id in ids)
+            {
+                _chatRepo.AddtoUnread(id, chanalName);
+            }
             _chatRepo.WriteMessagesForChannel(chanalName, new UserMessage()
             {
                 Message = userMessage.Message,

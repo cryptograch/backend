@@ -120,15 +120,31 @@ namespace Taxi.Controllers
 
             var channelDtos = new List<ChannelDto>();
 
+            var unread = _chatRepo.GetUnreadForUser(uid);
+            
             foreach (var c in channels)
             {
                 var uids = _chatRepo.GetUsersForChannel(c);
 
+                var thisunread = unread.FirstOrDefault(u => u.ChannelId == c);
+                
                 var dto = new ChannelDto()
                 {
                     Id = c,
                     Members = new List<ChatUserDto>()
                 };
+
+                if (thisunread != null)
+                {
+                    dto.LastUpdate = thisunread.LastUpDateTime;
+                    dto.NumUnread = thisunread.NumberOfUnread;
+                }
+
+                if (dto.LastUpdate == default(DateTime))
+                {
+                    var lastMessage = _chatRepo.GetMessagesForChannel(c, 0, 1);
+                    dto.LastUpdate = lastMessage[0].PublicationTime;
+                }
 
                 foreach (var id in uids)
                 {
@@ -146,6 +162,15 @@ namespace Taxi.Controllers
                 }
                 channelDtos.Add(dto);
             }
+
+            channelDtos.Sort((rhs, other) =>
+            {
+                if (rhs.LastUpdate > other.LastUpdate)
+                {
+                    return -1;
+                }
+                return 1;
+            });
 
             return channelDtos;
         } 
