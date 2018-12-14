@@ -114,6 +114,23 @@ namespace Taxi.Controllers
             return Ok(getChannelsForUser(uid));
         }
 
+        [Authorize]
+        [HttpPost("chat/read/{channelId}")]
+        public async Task<IActionResult> ReadMessagesForChannel(string channelId)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            
+            if (channelId == null)
+            {
+                return NotFound();
+            }
+            
+            _chatRepo.RemoveFromUnread(uid, channelId);
+
+            return NoContent();
+        }
+
         private List<ChannelDto> getChannelsForUser(string uid)
         {
             var channels = _chatRepo.GetSubscriptionsForUser(uid);
@@ -139,11 +156,12 @@ namespace Taxi.Controllers
                     dto.LastUpdate = thisunread.LastUpDateTime;
                     dto.NumUnread = thisunread.NumberOfUnread;
                 }
-
+                //if no unread get last message
                 if (dto.LastUpdate == default(DateTime))
                 {
                     var lastMessage = _chatRepo.GetMessagesForChannel(c, 0, 1);
-                    dto.LastUpdate = lastMessage[0].PublicationTime;
+                    if (lastMessage.Count > 0)
+                        dto.LastUpdate = lastMessage[0].PublicationTime;
                 }
 
                 foreach (var id in uids)

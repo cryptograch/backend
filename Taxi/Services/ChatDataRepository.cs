@@ -137,7 +137,8 @@ namespace Taxi.Services
 
         public void RemoveFromUnread(string uid, string channel)
         {
-            _database.HashDelete(unreadPrefix + uid, channel);
+            if (_database.HashExists(unreadPrefix + uid, channel))
+                _database.HashDelete(unreadPrefix + uid, channel);
         }
 
         public List<UnreadMessages> GetUnreadForUser(string uid)
