@@ -15,8 +15,8 @@ namespace Taxi.Helpers.Creational
         {
             try
             {
-               // var connectionString = "85.25.11.9:2720,password=d6d255496fbbd00973e7f13dd2a014ce";
-                var connectionString = "localhost";
+                var connectionString = "85.25.11.9:2720,password=d6d255496fbbd00973e7f13dd2a014ce";
+                //var connectionString = "localhost";
 
                 var options = ConfigurationOptions.Parse(connectionString);
 

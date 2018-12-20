@@ -85,7 +85,7 @@ namespace Taxi.Controllers
             return Ok(payment);
         }
 
-        [Authorize(Policy = "Admin")]
+        [Authorize]
         [HttpGet("getusers",Name = "GetUsers")]
         public async Task<IActionResult> GetUsers(UserResourceParameters resourceParameters)
         {
