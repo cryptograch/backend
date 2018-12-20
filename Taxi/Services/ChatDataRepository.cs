@@ -14,6 +14,7 @@ namespace Taxi.Services
         private string subscriptionPrefix = "subscription";
         private string connectionPrefix = "connection";
         private string channelUsersPrefix = "channelUsers";
+        private string unreadPrefix = "unread";
         private static IDatabase _database;
         private static ConnectionMultiplexer _redis;
         public ChatDataRepository()
@@ -56,6 +57,14 @@ namespace Taxi.Services
             return channels;
         }
 
+        public void RemoveSubscriptonForUser(string uid, string channelId)
+        {
+            _database.SetRemove(subscriptionPrefix + uid, channelId);
+            if (_database.SetContains(subscriptionPrefix + uid, channelId)) //todo: just for testing purposes remove;
+            {
+                throw new ArgumentException();
+            }
+        }
         public void WriteMessagesForChannel(string channelId, UserMessage userMessage)
         {
             var json = JsonConvert.SerializeObject(userMessage);
@@ -94,6 +103,56 @@ namespace Taxi.Services
             }
 
             return uids;
+        }
+
+        public void AddtoUnread(string uid, string channel)
+        {
+            string unreadMessage;
+
+            if (_database.HashExists(unreadPrefix + uid, channel))
+            {
+                unreadMessage = _database.HashGet(unreadPrefix + uid, channel);
+
+                _database.HashDelete(unreadPrefix + uid, channel);
+
+                var unread = JsonConvert.DeserializeObject<UnreadMessages>(unreadMessage);
+
+                unread.LastUpDateTime = DateTime.UtcNow;
+
+                ++unread.NumberOfUnread;
+
+                _database.HashSet(unreadPrefix + uid, channel, JsonConvert.SerializeObject(unread));
+            }
+            else
+            {
+                var newUnread = new UnreadMessages()
+                {
+                    ChannelId = channel, 
+                    LastUpDateTime = DateTime.UtcNow, 
+                    NumberOfUnread = 1
+                };
+                _database.HashSet(unreadPrefix + uid, channel, JsonConvert.SerializeObject(newUnread));
+            }
+        }
+
+        public void RemoveFromUnread(string uid, string channel)
+        {
+            if (_database.HashExists(unreadPrefix + uid, channel))
+                _database.HashDelete(unreadPrefix + uid, channel);
+        }
+
+        public List<UnreadMessages> GetUnreadForUser(string uid)
+        {
+            var values = _database.HashValues(unreadPrefix + uid);
+
+            var unread = new List<UnreadMessages>();
+
+            foreach (var u in values)
+            {
+                unread.Add( JsonConvert.DeserializeObject<UnreadMessages>(u.ToString()));
+            }
+
+            return unread;
         }
     }
 }

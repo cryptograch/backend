@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.S3;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Org.BouncyCastle.Asn1;
 using StackExchange.Redis;
 using Taxi.Entities;
 using Taxi.Helpers;
@@ -72,8 +74,8 @@ namespace Taxi.Controllers
         public IActionResult GetMessagesForChat(string channelId, int from, int to)
         {
             var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
-
-            if (!channelId.Contains(uid))
+            
+            if (string.IsNullOrWhiteSpace(channelId) || !channelId.Contains(uid))
             {
                 return NotFound();
             }
@@ -89,20 +91,79 @@ namespace Taxi.Controllers
         {
             var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
 
+            var channelDtos = getChannelsForUser(uid);  
+
+            return Ok(channelDtos);
+        }
+
+        [Authorize]
+        [HttpDelete("chat/{channelId}")]
+        public async Task<IActionResult> RemoveChannelForUser(string channelId)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            var channel = _chatRepo.GetSubscriptionsForUser(uid)?.FirstOrDefault(c => c == channelId);
+            
+            if (channel == null)
+            {
+                return NotFound();
+            }
+
+            _chatRepo.RemoveSubscriptonForUser(uid, channel);
+
+            return Ok(getChannelsForUser(uid));
+        }
+
+        [Authorize]
+        [HttpPost("chat/read/{channelId}")]
+        public async Task<IActionResult> ReadMessagesForChannel(string channelId)
+        {
+            var uid = User.Claims.Single(c => c.Type == Constants.Strings.JwtClaimIdentifiers.Id).Value;
+
+            
+            if (channelId == null)
+            {
+                return NotFound();
+            }
+            
+            _chatRepo.RemoveFromUnread(uid, channelId);
+
+            return NoContent();
+        }
+
+        private List<ChannelDto> getChannelsForUser(string uid)
+        {
             var channels = _chatRepo.GetSubscriptionsForUser(uid);
 
             var channelDtos = new List<ChannelDto>();
 
+            var unread = _chatRepo.GetUnreadForUser(uid);
+            
             foreach (var c in channels)
             {
                 var uids = _chatRepo.GetUsersForChannel(c);
+
+                var thisunread = unread.FirstOrDefault(u => u.ChannelId == c);
                 
-                var dto =  new ChannelDto()
+                var dto = new ChannelDto()
                 {
                     Id = c,
                     Members = new List<ChatUserDto>()
                 };
-                
+
+                if (thisunread != null)
+                {
+                    dto.LastUpdate = thisunread.LastUpDateTime;
+                    dto.NumUnread = thisunread.NumberOfUnread;
+                }
+                //if no unread get last message
+                if (dto.LastUpdate == default(DateTime))
+                {
+                    var lastMessage = _chatRepo.GetMessagesForChannel(c, 0, 1);
+                    if (lastMessage.Count > 0)
+                        dto.LastUpdate = lastMessage[0].PublicationTime;
+                }
+
                 foreach (var id in uids)
                 {
                     var identity = _usersRepository.GetUser(id);
@@ -120,8 +181,16 @@ namespace Taxi.Controllers
                 channelDtos.Add(dto);
             }
 
-            return Ok(channelDtos);
-        }
-        
+            channelDtos.Sort((rhs, other) =>
+            {
+                if (rhs.LastUpdate > other.LastUpdate)
+                {
+                    return -1;
+                }
+                return 1;
+            });
+
+            return channelDtos;
+        } 
     }
 }
